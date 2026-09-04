@@ -1,0 +1,48 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake configure debug",
+            "type": "cmake",
+            "command": "configure",
+            "preset": "debug",
+            "problemMatcher": "$cmake"
+        },
+        {
+            "label": "cmake build debug",
+            "type": "cmake",
+            "command": "build",
+            "preset": "build-debug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "cmake clean debug",
+            "type": "cmake",
+            "command": "clean",
+            "preset": "debug"
+        },
+        {
+            "label": "flash (OpenOCD烧录)",
+            "type": "shell",
+            "command": "openocd",
+            "args": [
+                "-f",
+                "interface/stlink.cfg",
+                "-c",
+                "transport select swd",
+                "-c",
+                "adapter speed 4000",
+                "-f",
+                "target/stm32f4x.cfg",
+                "-c",
+                "program build/Rehab_Bootloader.elf verify reset exit"
+            ],
+            "group": "build",
+            "dependsOn": "cmake build debug"
+        }
+    ]
+}

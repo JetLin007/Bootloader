@@ -1,0 +1,22 @@
+{
+    "arm-gcc.executablePath": "C:\\Program Files\\Arm\\GNU Toolchain mingw-w64-x86_64-arm-none-eabi\\bin\\arm-none-eabi-gcc.exe",
+    "cmake.cmakePath": "D:\\Program Files\\CMake\\bin\\cmake.exe",
+    "cmake.useCMakePresets": "always",
+    "cmake.autoSelectPreset": "debug",
+    "C_Cpp.default.cStandard": "c99",
+    "C_Cpp.default.cppStandard": "c11",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/Core/Inc",
+        "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc",
+        "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "${workspaceFolder}/Drivers/CMSIS/Include"
+    ],
+    "[c]": {
+        "editor.formatOnSave": true
+    },
+    "[cpp]": {
+        "editor.formatOnSave": true
+    },
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "files.encoding": "utf8"
+}

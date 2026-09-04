@@ -1,0 +1,61 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "Debug调试版本",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "installDir": "${sourceDir}/install_debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_SYSTEM_NAME": "Generic",
+                "CMAKE_SYSTEM_PROCESSOR": "arm",
+                "CMAKE_C_COMPILER": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc.exe",
+                "CMAKE_ASM_COMPILER": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc.exe",
+                "CMAKE_OBJCOPY": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-objcopy.exe",
+                "CMAKE_SIZE": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-size.exe",
+                "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY",
+                "CMAKE_C_COMPILER_WORKS": "1",
+                "CMAKE_ASM_COMPILER_WORKS": "1"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release发布版本",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build_release",
+            "installDir": "${sourceDir}/install_release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_SYSTEM_NAME": "Generic",
+                "CMAKE_SYSTEM_PROCESSOR": "arm",
+                "CMAKE_C_COMPILER": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc.exe",
+                "CMAKE_ASM_COMPILER": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc.exe",
+                "CMAKE_OBJCOPY": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-objcopy.exe",
+                "CMAKE_SIZE": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-size.exe",
+                "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY",
+                "CMAKE_C_COMPILER_WORKS": "1",
+                "CMAKE_ASM_COMPILER_WORKS": "1"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "build-debug",
+            "displayName": "编译Debug固件",
+            "configurePreset": "debug",
+            "targets": [
+                "Rehab_Bootloader.elf"
+            ]
+        },
+        {
+            "name": "build-release",
+            "displayName": "编译Release固件",
+            "configurePreset": "release",
+            "targets": [
+                "Rehab_Bootloader.elf"
+            ]
+        }
+    ]
+}
