@@ -34,6 +34,9 @@ MDK-ARM/*/*.sct
 MDK-ARM/*/*/*.o
 MDK-ARM/*/*/*.d
 MDK-ARM/*/*/*.crf
+MDK-ARM/Rehab_Bootloader/
+MDK-ARM/*.uvprojx
+MDK-ARM/*.lst
 
 # ==================== 编译产物 ====================
 *.elf
