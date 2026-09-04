@@ -1,0 +1,68 @@
+# ==================== CMake编译输出 ====================
+build/
+build_debug/
+build_release/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile
+build.ninja
+.ninja_deps
+.ninja_log
+rules.ninja
+InstallScripts.json
+TargetDirectories.txt
+
+# ==================== MDK-ARM (Keil) 编译输出 ====================
+MDK-ARM/DebugConfig/
+MDK-ARM/RTE/
+MDK-ARM/*.dep
+MDK-ARM/*.uvguix.*
+MDK-ARM/*.uvoptx
+MDK-ARM/*.bak
+MDK-ARM/*/*.o
+MDK-ARM/*/*.d
+MDK-ARM/*/*.crf
+MDK-ARM/*/*.axf
+MDK-ARM/*/*.hex
+MDK-ARM/*/*.htm
+MDK-ARM/*/*.lnp
+MDK-ARM/*/*.map
+MDK-ARM/*/*.sct
+MDK-ARM/*/*/*.o
+MDK-ARM/*/*/*.d
+MDK-ARM/*/*/*.crf
+
+# ==================== 编译产物 ====================
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.siz
+*.lst
+*.sct
+
+# ==================== STM32CubeMX 临时文件 ====================
+*.ioc.bak
+.cproject.bak
+.project.bak
+.mxproject
+
+# ==================== IDE 配置文件 ====================
+# VSCode (保留必要的配置，忽略临时文件)
+.vscode/*.log
+.vscode/ipch/
+
+# ==================== 系统文件 ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==================== 日志和临时文件 ====================
+*.log
+*.tmp
+*.swp
+*~
