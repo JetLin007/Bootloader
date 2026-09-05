@@ -113,20 +113,23 @@ static void flash_erase_range(uint32_t start_addr, uint32_t size)
 {
     HAL_FLASH_Unlock();
     FLASH_EraseInitTypeDef erase;
-    erase.TypeErase    = FLASH_TYPEERASE_SECTORS;
-    erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;
-    erase.Sector       = addr_to_sector(start_addr);
-    erase.NbSectors    = 0;
-    uint32_t end = start_addr + size - 1;
-    uint32_t cur = start_addr;
+    erase.TypeErase    = FLASH_TYPEERASE_SECTORS;  // 按扇区擦除
+    erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;    // 电压范围3（2.7V-3.6V）
+    erase.Sector       = addr_to_sector(start_addr); // 起始扇区号
+    erase.NbSectors    = 0;                        // 扇区数量（待计算）
+    uint32_t end = start_addr + size - 1;  // 擦除结束地址
+    uint32_t cur = start_addr;             // 当前遍历位置
     while (cur <= end)
     {
-        erase.NbSectors++;
+        erase.NbSectors++;  // 扇区计数+1
+
+        // 查找下一个扇区的起始地址
         for (uint32_t i = 0; i < sizeof(sector_table)/sizeof(sector_table[0]); i++)
         {
             if (sector_table[i].start > cur) { cur = sector_table[i].start; break; }
         }
-        if (cur > end) break;
+
+        if (cur > end) break;  // 超出范围则退出
     }
     uint32_t err = 0;
     HAL_FLASHEx_Erase(&erase, &err);
@@ -155,6 +158,9 @@ static void flash_write_word(uint32_t addr, uint32_t value)
 static uint32_t crc32_table[256];
 static int crc32_ready = 0;
 
+//标准多项式: 0x04C11DB7 (x³² + x²⁶ + x²³ + x²² + x¹⁶ + x¹² + x¹¹ + x¹⁰ + x⁸ + x⁷ + x⁵ + x⁴ + x² + x + 1)
+// 反向多项式: 0xEDB88320 (将标准多项式的位反转)
+//使用反向多项式的原因是按字节处理时从低位到高位计算更高效。
 static void crc32_init(void)
 {
     for (uint32_t i = 0; i < 256; i++)
@@ -239,18 +245,59 @@ typedef void (*app_entry_t)(void);
 static void jump_to_app(void)
 {
     uint32_t app_stack = *(volatile uint32_t *)APP_RUN_ADDR;
-    if (app_stack < 0x20000000 || app_stack > 0x20030000)
-        return;
-
     uint32_t app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
-    if (app_reset < APP_RUN_ADDR || app_reset >= 0x08100000)
-        return;
 
+    /* ====== 验证栈指针 ====== */
+    if (app_stack < 0x20000000 || app_stack > 0x20030000)
+    {
+        /* 验证失败，尝试回滚到备份区 */
+        do_rollback();
+        /* 回滚后重新读取 */
+        app_stack = *(volatile uint32_t *)APP_RUN_ADDR;
+        app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
+        /* 回滚后还是失败，系统复位（Bootloader重新启动） */
+        if (app_stack < 0x20000000 || app_stack > 0x20030000)
+        {
+            NVIC_SystemReset();
+        }
+    }
+
+    /* ====== 验证复位向量 ====== */
+    if (app_reset < APP_RUN_ADDR || app_reset >= 0x08100000)
+    {
+        do_rollback();
+        app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
+        if (app_reset < APP_RUN_ADDR || app_reset >= 0x08100000)
+        {
+            NVIC_SystemReset();
+        }
+    }
+
+    /* ====== 清除Bootloader中断残留 ====== */
     __disable_irq();
+
+    /* 关闭所有外设中断（Cortex-M4有8个NVIC_ICER寄存器） */
+    for (int i = 0; i < 8; i++)
+    {
+        NVIC->ICER[i] = 0xFFFFFFFF;  /* 清除中断使能 */
+        NVIC->ICPR[i] = 0xFFFFFFFF;  /* 清除挂起中断 */
+    }
+
+    /* 关闭SysTick（Bootloader的HAL_Init启动了它） */
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL  = 0;
+
+    /* ====== 设置栈指针并跳转 ====== */
     __set_MSP(app_stack);
+
     app_entry_t app_entry = (app_entry_t)app_reset;
     app_entry();
+
+    /* 跳转失败（不应该走到这里），系统复位 */
+    NVIC_SystemReset();
 }
+
 
 /* ==================== 主函数 ==================== */
 int main(void)
