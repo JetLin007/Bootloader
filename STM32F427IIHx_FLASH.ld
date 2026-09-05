@@ -1,29 +1,19 @@
-/*
- * STM32F427IIHx Bootloader 链接脚本
- * Flash: 64KB (0x08000000 ~ 0x0800FFFF)
- * RAM:   256KB (0x20000000 ~ 0x2003FFFF)
- * CCM:   64KB  (0x10000000 ~ 0x1000FFFF)
- */
-
 ENTRY(Reset_Handler)
 
-/* 最高栈地址 = RAM起始 + RAM大小 */
 _estack = ORIGIN(RAM) + LENGTH(RAM);
-
-/* 堆和栈大小 */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+_Min_Heap_Size = 0x200;
+_Min_Stack_Size = 0x400;
 
 MEMORY
 {
-    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
+    FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 0xFE00
+    VER   (rx)  : ORIGIN = 0x0800FF00, LENGTH = 0x100
     RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 256K
-    CCMRAM(rwx) : ORIGIN = 0x10000000, LENGTH = 64K
+    CCM   (rwx) : ORIGIN = 0x10000000, LENGTH = 64K
 }
 
 SECTIONS
 {
-    /* 中断向量表 */
     .isr_vector :
     {
         . = ALIGN(4);
@@ -31,7 +21,6 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
-    /* 代码 */
     .text :
     {
         . = ALIGN(4);
@@ -46,7 +35,6 @@ SECTIONS
         _etext = .;
     } >FLASH
 
-    /* 只读数据 */
     .rodata :
     {
         . = ALIGN(4);
@@ -55,7 +43,6 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
-    /* 构造函数 */
     .preinit_array :
     {
         PROVIDE_HIDDEN(__preinit_array_start = .);
@@ -79,8 +66,8 @@ SECTIONS
         PROVIDE_HIDDEN(__fini_array_end = .);
     } >FLASH
 
-    /* 已初始化数据（加载到Flash，运行时拷贝到RAM） */
     _sidata = LOADADDR(.data);
+
     .data :
     {
         . = ALIGN(4);
@@ -91,7 +78,6 @@ SECTIONS
         _edata = .;
     } >RAM AT> FLASH
 
-    /* 未初始化数据 */
     .bss :
     {
         . = ALIGN(4);
@@ -105,7 +91,6 @@ SECTIONS
         __bss_end__ = _ebss;
     } >RAM
 
-    /* 用户堆和栈 */
     ._user_heap_stack :
     {
         . = ALIGN(8);
@@ -116,14 +101,20 @@ SECTIONS
         . = ALIGN(8);
     } >RAM
 
-    /* CCM RAM（可选，Bootloader不用） */
     .ccmram (NOLOAD) :
     {
         . = ALIGN(4);
         *(.ccmram)
         *(.ccmram*)
         . = ALIGN(4);
-    } >CCMRAM
+    } >CCM
+
+    .version_info :
+    {
+        . = ALIGN(4);
+        KEEP(*(.version_info))
+        . = ALIGN(4);
+    } >VER
 
     /DISCARD/ :
     {

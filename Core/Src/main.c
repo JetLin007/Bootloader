@@ -20,6 +20,34 @@
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 
+/* ============================================================
+ * Bootloader版本信息（放在Flash固定地址0x0800FF00）
+ * App可以通过读取这个地址获取Bootloader版本号
+ * ============================================================ */
+#define BL_VERSION_MAGIC  0x424C5652UL  /* "BLVR" */
+
+typedef struct __attribute__((packed)) {
+    uint32_t magic;           /* 魔术字 0x424C5652 */
+    char     version_str[16]; /* 版本字符串 "1.0.0" */
+    uint8_t  major;           /* 主版本 */
+    uint8_t  minor;           /* 次版本 */
+    uint8_t  patch;           /* 修订号 */
+    uint8_t  reserved;        /* 保留 */
+    uint16_t crc;             /* CRC16（预留，暂为0） */
+} bl_version_info_t;
+
+/* 放在固定地址0x0800FF00的版本信息（由链接脚本保证地址） */
+const bl_version_info_t g_bl_version_info
+    __attribute__((section(".version_info"), used)) = {
+    .magic       = BL_VERSION_MAGIC,
+    .version_str = BL_VERSION,
+    .major       = BL_VERSION_MAJOR,
+    .minor       = BL_VERSION_MINOR,
+    .patch       = BL_VERSION_PATCH,
+    .reserved    = 0,
+    .crc         = 0,
+};
+
 /* ==================== 分区定义（与ota.h一致） ==================== */
 #define APP_RUN_ADDR         0x08010000UL
 #define APP_RUN_SIZE         (448 * 1024)
@@ -28,12 +56,10 @@
 #define PARAM_ADDR           0x08100000UL
 #define BACKUP_ADDR          0x08120000UL
 #define BACKUP_SIZE          (512 * 1024)
-
 #define OTA_MAGIC            0x55AA55AAUL
 #define COPY_DONE_MAGIC      0xA55AA55AUL
 #define PENDING_MAGIC        0x5A5A5A5AUL
 #define ROLLBACK_MAGIC       0xA5A5A5A5UL
-
 #define PARAM_MAGIC_OFF      0x0000
 #define PARAM_FW_SIZE_OFF    0x0004
 #define PARAM_FW_CRC_OFF     0x0008
@@ -83,7 +109,6 @@ static uint8_t addr_to_sector(uint32_t addr)
 }
 
 /* ==================== Flash操作 ==================== */
-
 static void flash_erase_range(uint32_t start_addr, uint32_t size)
 {
     HAL_FLASH_Unlock();
@@ -127,7 +152,6 @@ static void flash_write_word(uint32_t addr, uint32_t value)
 }
 
 /* ==================== CRC32（用于校验备份/新固件） ==================== */
-
 static uint32_t crc32_table[256];
 static int crc32_ready = 0;
 
@@ -153,7 +177,6 @@ static uint32_t crc32_calc(const uint8_t *data, uint32_t len)
 }
 
 /* ==================== 回滚操作 ==================== */
-
 static void do_rollback(void)
 {
     uint32_t backup_size = *(volatile uint32_t *)(PARAM_ADDR + PARAM_BCK_SIZE_OFF);
@@ -179,7 +202,6 @@ static void do_rollback(void)
 }
 
 /* ==================== 升级操作 ==================== */
-
 static void do_upgrade(void)
 {
     uint32_t fw_size = *(volatile uint32_t *)(PARAM_ADDR + PARAM_FW_SIZE_OFF);
@@ -212,7 +234,6 @@ static void do_upgrade(void)
 }
 
 /* ==================== 跳转到App ==================== */
-
 typedef void (*app_entry_t)(void);
 
 static void jump_to_app(void)
@@ -232,7 +253,6 @@ static void jump_to_app(void)
 }
 
 /* ==================== 主函数 ==================== */
-
 int main(void)
 {
     HAL_Init();
@@ -265,4 +285,3 @@ int main(void)
     /* 跳转失败则死循环 */
     while (1) { __NOP(); }
 }
-
