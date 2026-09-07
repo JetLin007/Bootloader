@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Cortex Debug(OpenOCD)",
+            "name": "Cortex Debug (Debug版)",
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
@@ -21,23 +21,42 @@
             "preLaunchTask": "cmake build debug"
         },
         {
-            "name": "仅下载固件，直接运行(不调试)",
-            "type": "cppdbg",
+            "name": "Cortex Debug (Release版)",
+            "type": "cortex-debug",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Rehab_Bootloader.elf",
-            "miDebuggerPath": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
-            "miDebuggerServerAddress": "localhost:3333",
-            "debugServerPath": "E:\\11111111111111111111111111\\openocd-20260302\\OpenOCD-20260302-0.12.0\\bin\\openocd.exe",
-            "debugServerArgs": "-f interface/stlink.cfg -f target/stm32f4x.cfg",
-            "preLaunchTask": "build",
-            "setupCommands": [
-                {"text": "monitor reset halt"},
-                {"text": "load"},
-                {"text": "monitor reset run"},
-                {"text": "disconnect"},
-                {"text": "quit"}
+            "servertype": "openocd",
+            "executable": "${workspaceFolder}/build_release/Rehab_Bootloader.elf",
+            "cwd": "${workspaceFolder}",
+            "openocdPath": "E:\\11111111111111111111111111\\openocd-20260302\\OpenOCD-20260302-0.12.0\\bin\\openocd.exe",
+            "searchDir": ["E:/11111111111111111111111111/openocd-20260302/OpenOCD-20260302-0.12.0/scripts"],
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
             ],
-            "stopAtEntry": false
+            "gdbPath": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+            "gdbVersionCheck": false,
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "raw",
+            "preLaunchTask": "cmake build release"
+        },
+        {
+            "name": "仅下载固件不调试",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "executable": "${workspaceFolder}/build/Rehab_Bootloader.elf",
+            "cwd": "${workspaceFolder}",
+            "openocdPath": "E:\\11111111111111111111111111\\openocd-20260302\\OpenOCD-20260302-0.12.0\\bin\\openocd.exe",
+            "searchDir": ["E:/11111111111111111111111111/openocd-20260302/OpenOCD-20260302-0.12.0/scripts"],
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "gdbPath": "C:/Program Files/Arm/GNU Toolchain mingw-w64-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb.exe",
+            "gdbVersionCheck": false,
+            "runToEntryPoint": "main",
+            "preLaunchTask": "cmake build debug",
+            "postDebugTask": ""
         }
     ]
 }

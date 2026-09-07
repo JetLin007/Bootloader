@@ -54,6 +54,7 @@ add_link_options(
 set(CORE_SOURCES
     "${CMAKE_SOURCE_DIR}/Core/Src/main.c"
     "${CMAKE_SOURCE_DIR}/Core/Src/system_stm32f4xx.c"
+    "${CMAKE_SOURCE_DIR}/Core/Src/stm32f4xx_it.c"
 )
 
 # 只包含最必需的HAL模块（Flash操作+HAL核心）
@@ -90,4 +91,19 @@ add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -O ihex   ${PROJECT_NAME}.elf ${PROJECT_NAME}_v${BL_VERSION}.hex
     COMMAND ${CMAKE_SIZE} ${PROJECT_NAME}.elf
     COMMENT "Generating ${PROJECT_NAME}_v${BL_VERSION}.bin / .hex"
+)
+
+# ==================== OpenOCD一键烧录（与主工程一致） ====================
+# 烧录地址：Bootloader=0x08000000，App固件=0x08010000
+set(FLASH_ADDRESS "0x08000000")
+set(BIN_FILE ${CMAKE_BINARY_DIR}/${PROJECT_NAME}_v${BL_VERSION}.bin)
+
+add_custom_target(flash
+    COMMAND openocd
+        -f interface/stlink.cfg
+        -c "transport select swd"
+        -c "adapter speed 4000"
+        -f target/stm32f4x.cfg
+        -c "program ${BIN_FILE} ${FLASH_ADDRESS} verify reset exit"
+    DEPENDS ${PROJECT_NAME}.elf
 )

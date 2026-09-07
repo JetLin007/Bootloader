@@ -68,6 +68,8 @@ const bl_version_info_t g_bl_version_info
 #define PARAM_BCK_SIZE_OFF   0x0018
 #define PARAM_BCK_CRC_OFF    0x001C
 #define PARAM_ROLLBACK_OFF   0x0020
+#define PARAM_BCK_DONE_OFF   0x0024
+#define BACKUP_DONE_MAGIC    0x42434B55UL  /* "BCKU" */
 
 /* ==================== Flash扇区表 ==================== */
 static const struct {
@@ -113,23 +115,20 @@ static void flash_erase_range(uint32_t start_addr, uint32_t size)
 {
     HAL_FLASH_Unlock();
     FLASH_EraseInitTypeDef erase;
-    erase.TypeErase    = FLASH_TYPEERASE_SECTORS;  // 按扇区擦除
-    erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;    // 电压范围3（2.7V-3.6V）
-    erase.Sector       = addr_to_sector(start_addr); // 起始扇区号
-    erase.NbSectors    = 0;                        // 扇区数量（待计算）
-    uint32_t end = start_addr + size - 1;  // 擦除结束地址
-    uint32_t cur = start_addr;             // 当前遍历位置
+    erase.TypeErase    = FLASH_TYPEERASE_SECTORS;
+    erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+    erase.Sector       = addr_to_sector(start_addr);
+    erase.NbSectors    = 0;
+    uint32_t end = start_addr + size - 1;
+    uint32_t cur = start_addr;
     while (cur <= end)
     {
-        erase.NbSectors++;  // 扇区计数+1
-
-        // 查找下一个扇区的起始地址
+        erase.NbSectors++;
         for (uint32_t i = 0; i < sizeof(sector_table)/sizeof(sector_table[0]); i++)
         {
             if (sector_table[i].start > cur) { cur = sector_table[i].start; break; }
         }
-
-        if (cur > end) break;  // 超出范围则退出
+        if (cur > end) break;
     }
     uint32_t err = 0;
     HAL_FLASHEx_Erase(&erase, &err);
@@ -143,6 +142,13 @@ static void flash_copy(uint32_t dst, uint32_t src, uint32_t size)
     {
         uint32_t word = *(volatile uint32_t *)(src + i);
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, dst + i, word);
+
+        /* 每拷贝64KB喂一次狗 */
+        if ((i & 0xFFFF) == 0)
+        {
+            /* Bootloader里用寄存器直接喂狗 */
+            IWDG->KR = 0xAAAA;
+        }
     }
     HAL_FLASH_Lock();
 }
@@ -158,9 +164,6 @@ static void flash_write_word(uint32_t addr, uint32_t value)
 static uint32_t crc32_table[256];
 static int crc32_ready = 0;
 
-//标准多项式: 0x04C11DB7 (x³² + x²⁶ + x²³ + x²² + x¹⁶ + x¹² + x¹¹ + x¹⁰ + x⁸ + x⁷ + x⁵ + x⁴ + x² + x + 1)
-// 反向多项式: 0xEDB88320 (将标准多项式的位反转)
-//使用反向多项式的原因是按字节处理时从低位到高位计算更高效。
 static void crc32_init(void)
 {
     for (uint32_t i = 0; i < 256; i++)
@@ -187,6 +190,11 @@ static void do_rollback(void)
 {
     uint32_t backup_size = *(volatile uint32_t *)(PARAM_ADDR + PARAM_BCK_SIZE_OFF);
     uint32_t backup_crc  = *(volatile uint32_t *)(PARAM_ADDR + PARAM_BCK_CRC_OFF);
+    uint32_t backup_done = *(volatile uint32_t *)(PARAM_ADDR + PARAM_BCK_DONE_OFF);
+
+    /* 校验备份完成标志（备份过程中断电时此标志不会被写入） */
+    if (backup_done != BACKUP_DONE_MAGIC)
+        return;
 
     /* 校验备份有效性 */
     if (backup_size == 0 || backup_size == 0xFFFFFFFF ||
@@ -245,68 +253,56 @@ typedef void (*app_entry_t)(void);
 static void jump_to_app(void)
 {
     uint32_t app_stack = *(volatile uint32_t *)APP_RUN_ADDR;
-    uint32_t app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
-
-    /* ====== 验证栈指针 ====== */
     if (app_stack < 0x20000000 || app_stack > 0x20030000)
-    {
-        /* 验证失败，尝试回滚到备份区 */
-        do_rollback();
-        /* 回滚后重新读取 */
-        app_stack = *(volatile uint32_t *)APP_RUN_ADDR;
-        app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
-        /* 回滚后还是失败，系统复位（Bootloader重新启动） */
-        if (app_stack < 0x20000000 || app_stack > 0x20030000)
-        {
-            NVIC_SystemReset();
-        }
-    }
+        return;
 
-    /* ====== 验证复位向量 ====== */
+    uint32_t app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
     if (app_reset < APP_RUN_ADDR || app_reset >= 0x08100000)
-    {
-        do_rollback();
-        app_reset = *(volatile uint32_t *)(APP_RUN_ADDR + 4);
-        if (app_reset < APP_RUN_ADDR || app_reset >= 0x08100000)
-        {
-            NVIC_SystemReset();
-        }
-    }
+        return;
 
-    /* ====== 清除Bootloader中断残留 ====== */
+    /* 关闭所有中断 */
     __disable_irq();
 
-    /* 关闭所有外设中断（Cortex-M4有8个NVIC_ICER寄存器） */
-    for (int i = 0; i < 8; i++)
-    {
-        NVIC->ICER[i] = 0xFFFFFFFF;  /* 清除中断使能 */
-        NVIC->ICPR[i] = 0xFFFFFFFF;  /* 清除挂起中断 */
-    }
-
-    /* 关闭SysTick（Bootloader的HAL_Init启动了它） */
+    /* 关闭SysTick（HAL_Init启动了SysTick，必须关闭否则跳转后会触发中断） */
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL  = 0;
 
-    /* ====== 设置栈指针并跳转 ====== */
+    /* 清除所有NVIC中断使能和挂起（共8个寄存器，覆盖64个中断） */
+    for (uint32_t i = 0; i < 8; i++)
+    {
+        NVIC->ICER[i] = 0xFFFFFFFF;
+        NVIC->ICPR[i] = 0xFFFFFFFF;
+    }
+
+    /* 清除PendSV和SysTick挂起 */
+    SCB->ICSR = SCB_ICSR_PENDSVCLR_Msk | SCB_ICSR_PENDSTCLR_Msk;
+
+    /* 设置栈指针并跳转到App */
     __set_MSP(app_stack);
+
+    /* 数据同步屏障，确保上面的操作完成后再跳转 */
+    __DSB();
+    __ISB();
 
     app_entry_t app_entry = (app_entry_t)app_reset;
     app_entry();
-
-    /* 跳转失败（不应该走到这里），系统复位 */
-    NVIC_SystemReset();
 }
-
 
 /* ==================== 主函数 ==================== */
 int main(void)
 {
+
+    /* 临时调试：先关闭所有中断和SysTick */
+    __disable_irq();
+    SysTick->CTRL = 0;
+
     HAL_Init();
 
     uint32_t ota_magic    = *(volatile uint32_t *)(PARAM_ADDR + PARAM_MAGIC_OFF);
     uint32_t pending      = *(volatile uint32_t *)(PARAM_ADDR + PARAM_PENDING_OFF);
     uint32_t rollback_req = *(volatile uint32_t *)(PARAM_ADDR + PARAM_ROLLBACK_OFF);
+
 
     /* 优先级1：主动回滚请求 */
     if (rollback_req == ROLLBACK_MAGIC)

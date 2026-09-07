@@ -56,6 +56,22 @@
             "targets": [
                 "Rehab_Bootloader.elf"
             ]
+        },
+        {
+            "name": "flash-debug",
+            "displayName": "编译Debug并一键烧录",
+            "configurePreset": "debug",
+            "targets": [
+                "flash"
+            ]
+        },
+        {
+            "name": "flash-release",
+            "displayName": "编译Release并一键烧录",
+            "configurePreset": "release",
+            "targets": [
+                "flash"
+            ]
         }
     ]
 }

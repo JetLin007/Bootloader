@@ -1,0 +1,57 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake configure debug",
+            "type": "cmake",
+            "command": "configure",
+            "preset": "debug",
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake build debug",
+            "type": "cmake",
+            "command": "build",
+            "preset": "build-debug",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "cmake configure release",
+            "type": "cmake",
+            "command": "configure",
+            "preset": "release",
+            "problemMatcher": []
+        },
+        {
+            "label": "cmake build release",
+            "type": "cmake",
+            "command": "build",
+            "preset": "build-release",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "cmake flash debug(编译+一键烧录)",
+            "type": "cmake",
+            "command": "build",
+            "preset": "flash-debug",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "cmake flash release(编译+一键烧录)",
+            "type": "cmake",
+            "command": "build",
+            "preset": "flash-release",
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "cmake clean debug",
+            "type": "cmake",
+            "command": "clean",
+            "preset": "debug"
+        }
+    ]
+}
