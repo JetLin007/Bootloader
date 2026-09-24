@@ -89,14 +89,14 @@ static const struct {
     {0x080A0000, 128*1024, FLASH_SECTOR_9},
     {0x080C0000, 128*1024, FLASH_SECTOR_10},
     {0x080E0000, 128*1024, FLASH_SECTOR_11},
-    {0x08100000, 128*1024, FLASH_SECTOR_12},
-    {0x08120000, 128*1024, FLASH_SECTOR_13},
-    {0x08140000, 128*1024, FLASH_SECTOR_14},
-    {0x08160000, 128*1024, FLASH_SECTOR_15},
-    {0x08180000, 128*1024, FLASH_SECTOR_16},
-    {0x081A0000, 128*1024, FLASH_SECTOR_17},
-    {0x081C0000, 128*1024, FLASH_SECTOR_18},
-    {0x081E0000, 128*1024, FLASH_SECTOR_19},
+    {0x08100000, 128*1024, FLASH_SECTOR_12},  // OTA参数区 ✅ 不变
+    {0x08120000, 128*1024, FLASH_SECTOR_13},  // 固件备份区 ✅ 不变
+    {0x08140000, 128*1024, FLASH_SECTOR_14},  // 固件备份区 ✅ 不变
+    {0x08160000, 128*1024, FLASH_SECTOR_15},  // 固件备份区 ✅ 不变
+    {0x08180000, 128*1024, FLASH_SECTOR_16},  // 固件备份区 ✅ 不变
+    {0x081A0000, 128*1024, FLASH_SECTOR_21},  // gravity_comp ❌ 原 FLASH_SECTOR_17
+    {0x081C0000, 128*1024, FLASH_SECTOR_22},  // (空闲) ❌ 原 FLASH_SECTOR_18
+    {0x081E0000, 128*1024, FLASH_SECTOR_23},  // teach_mode ❌ 原 FLASH_SECTOR_19
 };
 
 static uint8_t addr_to_sector(uint32_t addr)
@@ -107,7 +107,7 @@ static uint8_t addr_to_sector(uint32_t addr)
             addr < sector_table[i].start + sector_table[i].size)
             return sector_table[i].sector;
     }
-    return FLASH_SECTOR_19;
+    return FLASH_SECTOR_23;
 }
 
 /* ==================== Flash操作 ==================== */
